@@ -1,79 +1,45 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { InsuranceCard } from "../components/ui/InsuranceCard";
 import { ActionCTA } from "../components/ui/ActionCTA";
 import { Badge } from "../components/ui/badge";
-import { Check, Shield, Heart, Zap, Lock } from "lucide-react";
+import { Check, Shield, Zap, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Progress } from "../components/ui/progress";
+import { useAffiliateOffers, useLogAffiliateClick, useDiscountEstimate, usePets } from "../../hooks/useApi";
+import { useState } from "react";
 
 export function Insurance() {
-  const plans = [
-    {
-      name: "基礎健康守護",
-      marketPrice: 25.0,
-      yourPrice: 20.0,
-      savings: 5.0,
-      features: [
-        "基本疾病理賠",
-        "年度健康檢查",
-        "24/7 線上諮詢",
-        "基礎藥物補助",
-      ],
-      nextMilestone: {
-        action: "完成健康評估",
-        newPrice: 18.0,
-        progress: 45,
-      },
-    },
-    {
-      name: "智慧健康守護方案",
-      marketPrice: 32.0,
-      yourPrice: 22.0,
-      savings: 10.0,
-      badge: "最受歡迎",
-      features: [
-        "全方位疾病理賠",
-        "AI 健康預警系統",
-        "專屬獸醫諮詢",
-        "手術費用全額負擔",
-        "營養補充品折扣",
-        "動態保費優化",
-      ],
-      nextMilestone: {
-        action: "再完成 2 次散步",
-        newPrice: 19.0,
-        progress: 67,
-      },
-    },
-    {
-      name: "尊榮照護方案",
-      marketPrice: 45.0,
-      yourPrice: 35.0,
-      savings: 10.0,
-      badge: "頂級方案",
-      features: [
-        "涵蓋所有基礎與智慧方案",
-        "遺傳疾病篩檢",
-        "高端醫療機構優先預約",
-        "年度健檢全額補助",
-        "寵物按摩與復健療程",
-        "跨國醫療諮詢",
-        "終身保障無上限",
-      ],
-      nextMilestone: {
-        action: "連續 7 天達標運動",
-        newPrice: 32.0,
-        progress: 43,
-      },
-    },
-  ];
+  const { data: pets } = usePets();
+  const activePetId = pets?.[0]?.id ?? "";
 
-  const dynamicFactors = [
-    { label: "每日運動量", impact: "+15%", status: "positive" },
-    { label: "定期健康檢查", impact: "+12%", status: "positive" },
-    { label: "營養品使用", impact: "+8%", status: "positive" },
-    { label: "體重控制", impact: "+5%", status: "positive" },
-    { label: "預防接種紀錄", impact: "+10%", status: "positive" },
-  ];
+  const { data: offers, isLoading: offersLoading, isError: offersError } = useAffiliateOffers();
+  const { data: discount, isLoading: discountLoading } = useDiscountEstimate(activePetId);
+  const { mutate: logClick } = useLogAffiliateClick();
+
+  const handleOfferClick = async (offer: any) => {
+    logClick(offer.id, {
+      onSuccess: (res: any) => {
+        const url = res?.data?.redirect_url ?? offer.url;
+        window.open(url, "_blank", "noopener,noreferrer");
+      },
+      onError: () => {
+        // still open URL even if logging fails
+        window.open(offer.url, "_blank", "noopener,noreferrer");
+      },
+    });
+  };
+
+  const offerTypeLabel: Record<string, string> = {
+    INSURANCE: "保險方案",
+    FOOD: "健康飲食",
+    VET: "獸醫服務",
+  };
+
+  const offerTypeBadge: Record<string, string> = {
+    INSURANCE: "bg-blue-100 text-blue-700",
+    FOOD: "bg-green-100 text-green-700",
+    VET: "bg-purple-100 text-purple-700",
+  };
+
+  const isLoading = offersLoading || discountLoading;
 
   return (
     <div className="space-y-6">
@@ -85,7 +51,7 @@ export function Insurance() {
         </p>
       </div>
 
-      {/* Value Proposition Banner */}
+      {/* Value Proposition Banner - from real risk data */}
       <Card className="bg-gradient-to-r from-[#4CAF50] to-emerald-600 text-white border-0">
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
@@ -95,76 +61,106 @@ export function Insurance() {
                 <h3 className="text-xl font-bold">動態保費優化引擎</h3>
               </div>
               <p className="text-white/90 text-sm">
-                每一次散步、每一餐營養補充，都能即時降低您的保費。健康數據越好，保費越便宜！
+                {discount
+                  ? `${pets?.[0]?.name ?? "您的毛孩"} 目前風險等級：${discount.risk_level}，可獲得最高 ${discount.discount_percent}% 保費折扣`
+                  : "每一筆健康紀錄，都能即時降低您的保費。健康數據越好，保費越便宜！"}
               </p>
             </div>
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-center min-w-[140px]">
-              <p className="text-sm opacity-90 mb-1">本月平均優惠</p>
-              <p className="text-3xl font-bold">31%</p>
+              {discountLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+              ) : (
+                <>
+                  <p className="text-sm opacity-90 mb-1">您的折扣</p>
+                  <p className="text-3xl font-bold">{discount?.discount_percent ?? 0}%</p>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Dynamic Pricing Factors */}
-      <Card>
-        <CardHeader>
-          <CardTitle>您的保費優惠因子</CardTitle>
-          <CardDescription>
-            以下行為正在幫您節省保費
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {dynamicFactors.map((factor, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{factor.label}</p>
-                  <p className="text-xs text-green-700">折扣 {factor.impact}</p>
+      {/* Discount Unlock Actions */}
+      {discount && discount.unlock_actions?.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>解鎖更多折扣</CardTitle>
+            <CardDescription>完成以下健康任務，立即提升保費折扣</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {discount.unlock_actions.map((action: string, i: number) => (
+              <div key={i} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{action}</span>
+                  <Badge variant="secondary">+5%</Badge>
                 </div>
+                <Progress value={0} className="h-2" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Affiliate Offers from API */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">推薦合作方案</h2>
+
+        {isLoading && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="animate-pulse h-64 bg-gray-100" />
+            ))}
+          </div>
+        )}
+
+        {offersError && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm">無法載入方案資料，請稍後再試。</p>
+          </div>
+        )}
+
+        {!isLoading && offers && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {offers.map((offer: any) => (
+              <div key={offer.id} className="space-y-4">
+                <Card className="border-2 hover:border-[#4CAF50] transition-colors cursor-pointer group">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-1">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${offerTypeBadge[offer.offer_type] ?? "bg-gray-100 text-gray-700"}`}>
+                        {offerTypeLabel[offer.offer_type] ?? offer.offer_type}
+                      </span>
+                    </div>
+                    <CardTitle className="text-base">{offer.title}</CardTitle>
+                    <CardDescription className="text-xs">{offer.partner_name}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-700">{offer.description}</p>
+                    <ActionCTA
+                      primaryText={
+                        <span className="flex items-center gap-2 justify-center">
+                          立即查看 <ExternalLink className="w-4 h-4" />
+                        </span> as any
+                      }
+                      secondaryText="點擊後將記錄您的使用回饋"
+                      onClick={() => handleOfferClick(offer)}
+                      variant={offer.offer_type === "INSURANCE" ? "success" : "default"}
+                    />
+                  </CardContent>
+                </Card>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Insurance Plans */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">選擇您的方案</h2>
-        <div className="grid lg:grid-cols-3 gap-6">
-          {plans.map((plan, index) => (
-            <div key={index} className="space-y-4">
-              <InsuranceCard
-                planName={plan.name}
-                marketPrice={plan.marketPrice}
-                yourPrice={plan.yourPrice}
-                savings={plan.savings}
-                nextMilestone={plan.nextMilestone}
-                badge={plan.badge}
-              />
-              
-              {/* Features List */}
-              <Card>
-                <CardContent className="p-4 space-y-2">
-                  {plan.features.map((feature, fIndex) => (
-                    <div key={fIndex} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-[#4CAF50] mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <ActionCTA
-                primaryText="立即鎖定低保費"
-                secondaryText="不須綁約，隨時取消。30 天滿意保證"
-                onClick={() => console.log(`Selected plan: ${plan.name}`)}
-                variant={index === 1 ? "success" : "default"}
-              />
-            </div>
-          ))}
-        </div>
+        {!isLoading && offers?.length === 0 && (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="text-4xl mb-3">🔍</div>
+              <p className="text-muted-foreground">目前沒有可用的合作方案</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* How It Works */}
@@ -175,80 +171,22 @@ export function Insurance() {
             動態保費如何運作？
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                <Heart className="w-5 h-5 text-blue-600" />
+            {[
+              { step: "1", title: "記錄健康數據", desc: "透過 APP 記錄體重、飲食、疫苗等健康指標", color: "blue" },
+              { step: "2", title: "風險引擎分析", desc: "我們的規則引擎即時評估風險並計算折扣", color: "green" },
+              { step: "3", title: "自動降低保費", desc: "健康分數越高，對應的保費折扣越大", color: "purple" },
+            ].map((item) => (
+              <div key={item.step} className="bg-white rounded-lg p-4">
+                <div className={`w-10 h-10 bg-${item.color}-100 rounded-full flex items-center justify-center mb-3`}>
+                  <span className={`text-${item.color}-600 font-bold`}>{item.step}</span>
+                </div>
+                <h4 className="font-semibold mb-2">{item.title}</h4>
+                <p className="text-sm text-muted-foreground">{item.desc}</p>
               </div>
-              <h4 className="font-semibold mb-2">1. 記錄健康數據</h4>
-              <p className="text-sm text-muted-foreground">
-                透過 APP 記錄運動、飲食、體重等健康指標
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg p-4">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-3">
-                <Zap className="w-5 h-5 text-green-600" />
-              </div>
-              <h4 className="font-semibold mb-2">2. AI 即時分析</h4>
-              <p className="text-sm text-muted-foreground">
-                我們的 AI 引擎即時評估風險並計算優惠
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg p-4">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-3">
-                <Lock className="w-5 h-5 text-purple-600" />
-              </div>
-              <h4 className="font-semibold mb-2">3. 自動降低保費</h4>
-              <p className="text-sm text-muted-foreground">
-                健康數據越好，下個月保費自動調降
-              </p>
-            </div>
+            ))}
           </div>
-
-          <div className="bg-white rounded-lg p-4 border-2 border-green-200">
-            <p className="text-sm font-semibold text-green-900 mb-2">
-              💡 案例分享：
-            </p>
-            <p className="text-sm text-gray-700">
-              「連續 3 個月維持每日散步與健康飲食，我家毛孩的保費從 $32 降至 $19，
-              每年省下 <span className="font-bold text-green-600">$156</span>！」
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">- 王小明，黃金獵犬家長</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Progress to Next Tier */}
-      <Card>
-        <CardHeader>
-          <CardTitle>解鎖更多優惠</CardTitle>
-          <CardDescription>
-            完成以下目標，立即獲得額外保費折扣
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {[
-            { task: "上傳最近 6 個月健康檢查報告", reward: "-$2", progress: 0 },
-            { task: "連續 7 天達成運動目標", reward: "-$3", progress: 71 },
-            { task: "完成 AI 健康評估問卷", reward: "-$1.5", progress: 100 },
-            { task: "邀請 3 位好友加入", reward: "-$5", progress: 33 },
-          ].map((item, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{item.task}</span>
-                <Badge variant={item.progress === 100 ? "default" : "secondary"}>
-                  {item.reward}
-                </Badge>
-              </div>
-              <Progress 
-                value={item.progress} 
-                className={`h-2 ${item.progress === 100 ? "bg-green-200" : ""}`}
-              />
-            </div>
-          ))}
         </CardContent>
       </Card>
     </div>

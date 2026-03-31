@@ -2,190 +2,265 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { InsuranceCard } from "../components/ui/InsuranceCard";
 import { RiskInsight } from "../components/ui/RiskInsight";
 import { Progress } from "../components/ui/progress";
-import { Droplet, Footprints, Heart, Weight, TrendingUp } from "lucide-react";
+import { Droplet, Footprints, Heart, Weight, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
+import { useDashboardSummary, usePets, usePetDashboard } from "../../hooks/useApi";
+import { useState } from "react";
+
+// ── Skeleton ────────────────────────────────────────────
+function MetricSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-4 animate-pulse">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-lg bg-gray-200" />
+          <div className="flex-1 space-y-1">
+            <div className="h-3 bg-gray-200 rounded w-1/2" />
+            <div className="h-5 bg-gray-200 rounded w-1/3" />
+          </div>
+        </div>
+        <div className="h-2 bg-gray-200 rounded" />
+      </CardContent>
+    </Card>
+  );
+}
 
 export function Dashboard() {
-  const healthMetrics = [
-    {
-      icon: Footprints,
-      label: "今日步數",
-      value: "6,842",
-      target: "10,000",
-      progress: 68,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      icon: Droplet,
-      label: "飲水量",
-      value: "450ml",
-      target: "800ml",
-      progress: 56,
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50",
-    },
-    {
-      icon: Heart,
-      label: "心率",
-      value: "82 bpm",
-      target: "正常範圍",
-      progress: 100,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-    },
-    {
-      icon: Weight,
-      label: "體重",
-      value: "12.5kg",
-      target: "12.0kg 目標",
-      progress: 96,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-  ];
+  // Fetch pets list to pick the active one
+  const { data: pets, isLoading: petsLoading } = usePets();
+  const [activePetId, setActivePetId] = useState<string>("");
+
+  // Use first pet if no selection yet
+  const selectedPetId = activePetId || pets?.[0]?.id || "";
+  const { data: petDashboard, isLoading: dashLoading, isError } = usePetDashboard(selectedPetId);
+
+  const isLoading = petsLoading || dashLoading;
+  const risk = petDashboard?.risk_profile;
+  const discountStatus = petDashboard?.discount_status;
+  const weightTrend = petDashboard?.weight_trend ?? [];
+  const recentRecords = petDashboard?.recent_health_records ?? [];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">健康儀表板</h1>
-        <p className="text-muted-foreground">
-          根據毛孩的健康數據，我們為您優化保費與照護建議
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">健康儀表板</h1>
+          <p className="text-muted-foreground">
+            根據毛孩的健康數據，我們為您優化保費與照護建議
+          </p>
+        </div>
+        {/* Pet Selector */}
+        {pets && pets.length > 0 && (
+          <select
+            id="pet-selector"
+            value={selectedPetId}
+            onChange={(e) => setActivePetId(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+          >
+            {pets.map((p: any) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Insurance Card - Featured */}
+      {/* Error State */}
+      {isError && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm">無法載入儀表板資料，請重新整理或稍後再試。</p>
+        </div>
+      )}
+
+      {/* Insurance Card + Quick Stats */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <InsuranceCard
-            planName="智慧健康守護方案"
-            marketPrice={32.0}
-            yourPrice={22.0}
-            savings={10.0}
-            nextMilestone={{
-              action: "再完成 2 次散步",
-              newPrice: 19.0,
-              progress: 67,
-            }}
-            badge="已優化"
-          />
+          {isLoading ? (
+            <Card className="animate-pulse h-44 bg-gray-100" />
+          ) : (
+            <InsuranceCard
+              planName="智慧健康守護方案"
+              marketPrice={50}
+              yourPrice={discountStatus ? 50 * (1 - (discountStatus.discount_percent || 0) / 100) : 50}
+              savings={discountStatus?.discount_percent ? 50 * discountStatus.discount_percent / 100 : 0}
+              nextMilestone={{
+                action: risk?.recommendations?.[0] ?? "完成健康紀錄以解鎖折扣",
+                newPrice: 45,
+                progress: risk ? Math.min(risk.score, 100) : 0,
+              }}
+              badge={risk?.risk_level === "LOW" ? "已優化" : undefined}
+            />
+          )}
         </div>
 
-        {/* Quick Stats */}
+        {/* Quick Stats from API */}
         <Card className="border-2 border-gray-200">
           <CardHeader>
-            <CardTitle className="text-base">本月成效</CardTitle>
+            <CardTitle className="text-base">風險評分</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">保費節省</span>
-                <span className="font-bold text-green-600">$30.00</span>
+            {isLoading ? (
+              <div className="animate-pulse space-y-2">
+                <div className="h-12 bg-gray-200 rounded" />
+                <div className="h-4 bg-gray-200 rounded w-2/3" />
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">預防醫療成本</span>
-                <span className="font-bold text-green-600">$17.50</span>
-              </div>
-              <div className="h-px bg-gray-200 my-2" />
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">總計節省</span>
-                <span className="text-xl font-bold text-[#4CAF50]">$47.50</span>
-              </div>
-            </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-              <p className="text-xs text-green-700 mb-1">與上月相比</p>
-              <div className="flex items-center justify-center gap-1">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-lg font-bold text-green-600">+23%</span>
-              </div>
-            </div>
+            ) : risk ? (
+              <>
+                <div className="text-center">
+                  <p className="text-5xl font-bold text-[#4CAF50]">{risk.score}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    風險等級：
+                    <span className={`font-semibold ${
+                      risk.risk_level === "LOW" ? "text-green-600" :
+                      risk.risk_level === "MEDIUM" ? "text-yellow-600" : "text-red-600"
+                    }`}>
+                      {risk.risk_level === "LOW" ? "低" : risk.risk_level === "MEDIUM" ? "中" : "高"}
+                    </span>
+                  </p>
+                </div>
+                <Progress value={risk.score} className="h-3" />
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <p className="text-xs text-green-700 mb-1">預計折扣</p>
+                  <div className="flex items-center justify-center gap-1">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                    <span className="text-lg font-bold text-green-600">
+                      {discountStatus?.discount_percent ?? 0}%
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">尚無評分資料</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Health Metrics Grid */}
+      {/* Health Metrics (static + weight from API) */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {healthMetrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <Card key={metric.label}>
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <MetricSkeleton key={i} />)
+        ) : (
+          <>
+            <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`${metric.bgColor} p-2 rounded-lg`}>
-                    <Icon className={`w-5 h-5 ${metric.color}`} />
+                  <div className="bg-purple-50 p-2 rounded-lg">
+                    <Weight className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">{metric.label}</p>
-                    <p className="text-lg font-bold">{metric.value}</p>
+                    <p className="text-xs text-muted-foreground">最新體重</p>
+                    <p className="text-lg font-bold">
+                      {weightTrend.length > 0
+                        ? `${weightTrend[weightTrend.length - 1].weight_kg} kg`
+                        : "未記錄"}
+                    </p>
                   </div>
                 </div>
-                <Progress value={metric.progress} className="h-2 mb-1" />
-                <p className="text-xs text-muted-foreground">{metric.target}</p>
+                <Progress value={weightTrend.length > 0 ? 90 : 0} className="h-2 mb-1" />
+                <p className="text-xs text-muted-foreground">
+                  {weightTrend.length > 0 ? "已有體重紀錄" : "尚無體重紀錄"}
+                </p>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
-
-      {/* Risk Insights */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">智慧風險洞察</h2>
-        <div className="grid lg:grid-cols-2 gap-4">
-          <RiskInsight
-            metric="每日飲水量不足"
-            currentStatus="目前 450ml / 建議 800ml"
-            statusType="warning"
-            actionRecommendation="補充 200ml 水分，可降低泌尿系統疾病風險"
-            financialImpact={{
-              type: "decrease",
-              amount: 3,
-            }}
-          />
-
-          <RiskInsight
-            metric="運動量達標"
-            currentStatus="本週已完成 5 次散步"
-            statusType="success"
-            actionRecommendation="保持良好運動習慣，持續優化心血管健康"
-            financialImpact={{
-              type: "decrease",
-              amount: 5,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Activity Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>今日活動紀錄</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
             {[
-              { time: "09:30", activity: "早晨散步", duration: "25 分鐘", impact: "-$2 保費風險" },
-              { time: "12:15", activity: "補充水分", duration: "150ml", impact: "泌尿健康 +5%" },
-              { time: "15:00", activity: "營養補充", duration: "關節保健品", impact: "-$1.5 保費風險" },
-              { time: "18:45", activity: "傍晚散步", duration: "30 分鐘", impact: "-$2.5 保費風險" },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center gap-4 pb-4 border-b last:border-0">
-                <div className="text-sm font-semibold text-muted-foreground w-16">
-                  {item.time}
-                </div>
-                <div className="w-2 h-2 rounded-full bg-[#4CAF50]" />
-                <div className="flex-1">
-                  <p className="font-semibold">{item.activity}</p>
-                  <p className="text-sm text-muted-foreground">{item.duration}</p>
-                </div>
-                <div className="text-sm font-semibold text-green-600">
-                  {item.impact}
-                </div>
-              </div>
-            ))}
+              { icon: Footprints, label: "今日步數", value: "—", target: "需連接裝置", progress: 0, color: "text-blue-600", bgColor: "bg-blue-50" },
+              { icon: Droplet, label: "飲水量", value: "—", target: "需連接裝置", progress: 0, color: "text-cyan-600", bgColor: "bg-cyan-50" },
+              { icon: Heart, label: "疫苗狀態", value: recentRecords.some((r: any) => r.record_type === "VACCINE") ? "已接種" : "待確認", target: "基於紀錄", progress: recentRecords.some((r: any) => r.record_type === "VACCINE") ? 100 : 30, color: "text-red-600", bgColor: "bg-red-50" },
+            ].map((metric) => {
+              const Icon = metric.icon;
+              return (
+                <Card key={metric.label}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`${metric.bgColor} p-2 rounded-lg`}>
+                        <Icon className={`w-5 h-5 ${metric.color}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">{metric.label}</p>
+                        <p className="text-lg font-bold">{metric.value}</p>
+                      </div>
+                    </div>
+                    <Progress value={metric.progress} className="h-2 mb-1" />
+                    <p className="text-xs text-muted-foreground">{metric.target}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* Risk Insights from API */}
+      {!isLoading && risk && (
+        <div>
+          <h2 className="text-xl font-bold mb-4">智慧風險洞察</h2>
+          <div className="grid lg:grid-cols-2 gap-4">
+            {risk.factors.length === 0 ? (
+              <RiskInsight
+                metric="健康狀態良好"
+                currentStatus="所有健康指標正常"
+                statusType="success"
+                actionRecommendation="繼續保持定期健康紀錄，維持低風險狀態"
+                financialImpact={{ type: "decrease", amount: 10 }}
+              />
+            ) : (
+              risk.factors.map((factor: string, i: number) => (
+                <RiskInsight
+                  key={i}
+                  metric={factor}
+                  currentStatus={risk.recommendations[i] ?? "建議採取行動"}
+                  statusType="warning"
+                  actionRecommendation={risk.recommendations[i] ?? ""}
+                  financialImpact={{ type: "increase", amount: 5 }}
+                />
+              ))
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* Recent Records Timeline */}
+      {!isLoading && recentRecords.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>最近健康紀錄</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentRecords.map((record: any) => (
+                <div key={record.id} className="flex items-center gap-4 pb-4 border-b last:border-0">
+                  <div className="text-sm font-semibold text-muted-foreground w-24">
+                    {new Date(record.date).toLocaleDateString("zh-TW")}
+                  </div>
+                  <div className="w-2 h-2 rounded-full bg-[#4CAF50]" />
+                  <div className="flex-1">
+                    <p className="font-semibold">{record.record_type}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {record.notes || JSON.stringify(record.value)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State: No pets */}
+      {!isLoading && (!pets || pets.length === 0) && (
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="text-5xl mb-4">🐾</div>
+            <h3 className="text-lg font-semibold mb-2">尚未建立毛孩資料</h3>
+            <p className="text-muted-foreground text-sm">
+              新增您的第一隻寵物，開始追蹤健康紀錄與保費優化。
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

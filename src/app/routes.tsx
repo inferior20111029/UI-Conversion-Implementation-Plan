@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Dashboard } from "./pages/Dashboard";
 import { Insurance } from "./pages/Insurance";
 import { AIDoctorChat } from "./pages/AIDoctorChat";
@@ -7,13 +8,26 @@ import { HealthScanner } from "./pages/HealthScanner";
 import { Products } from "./pages/Products";
 import { Subscription } from "./pages/Subscription";
 import { Web3Identity } from "./pages/Web3Identity";
+import { Login } from "./pages/Login";
+import { AddPet } from "./pages/AddPet";
+import { AddHealthRecord } from "./pages/AddHealthRecord";
 
 export const router = createBrowserRouter([
+  // Public
+  { path: "/login", Component: Login },
+
+  // Protected
   {
     path: "/",
-    Component: Layout,
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, Component: Dashboard },
+      { path: "pets/add", Component: AddPet },
+      { path: "pets/:petId/add-record", Component: AddHealthRecord },
       { path: "insurance", Component: Insurance },
       { path: "ai-doctor", Component: AIDoctorChat },
       { path: "scanner", Component: HealthScanner },
