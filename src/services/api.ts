@@ -1,6 +1,7 @@
 import axios from "axios";
 
-// Local development environment fallback
+const configuredBaseUrl = import.meta.env.VITE_API_URL?.trim();
+
 const BASE_URLS = [
   "http://pet-health-os.test/api",
   "http://localhost:8000/api",
@@ -9,8 +10,10 @@ const BASE_URLS = [
 
 const api = axios.create({
   baseURL: BASE_URLS[0],
-  timeout: 10000,
-  headers: { "Content-Type": "application/json" },
+  timeout: 20000,
+  headers: {
+    Accept: "application/json",
+  },
 });
 
 // Inject JWT token into every request

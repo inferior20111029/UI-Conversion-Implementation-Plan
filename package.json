@@ -71,8 +71,10 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "@vitejs/plugin-vue": "^6.0.5",
     "tailwindcss": "4.1.12",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vue": "^3.5.31"
   },
   "peerDependencies": {
     "react": "18.3.1",

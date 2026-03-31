@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { dashboardService, petService, healthRecordService, affiliateService } from "../services/services";
+import {
+  aiHealthService,
+  CreateAiHealthScanPayload,
+  dashboardService,
+  petService,
+  healthRecordService,
+  affiliateService,
+  normalizeAiHealthScan,
+} from "../services/services";
 
 /* ── Dashboard Hooks ─────────────────────────────── */
 export const useDashboardSummary = () =>
@@ -88,4 +96,38 @@ export const useAffiliateOffers = () =>
 export const useLogAffiliateClick = () =>
   useMutation({
     mutationFn: (offerId: string) => affiliateService.logClick(offerId),
+  });
+
+export const useCreateAiHealthScan = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAiHealthScanPayload) => aiHealthService.create(payload),
+    onSuccess: (data) => {
+      const normalized = normalizeAiHealthScan(data);
+
+      if (normalized.id) {
+        qc.setQueryData(["aiHealthScan", normalized.id], normalized);
+      }
+    },
+  });
+};
+
+export const useAiHealthScan = (scanId: string | null) =>
+  useQuery({
+    queryKey: ["aiHealthScan", scanId],
+    queryFn: async () => {
+      const data = await aiHealthService.get(scanId!);
+      return normalizeAiHealthScan(data, scanId);
+    },
+    enabled: Boolean(scanId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+
+      if (status === "completed" || status === "failed") {
+        return false;
+      }
+
+      return 2500;
+    },
   });
