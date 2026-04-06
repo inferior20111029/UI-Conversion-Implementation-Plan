@@ -27,6 +27,7 @@ export function Insurance() {
   const selectedPetName = selectedPet?.name ?? insurancePlans?.meta?.pet?.name ?? "您的毛孩";
   const selectedPetTypeLabel = selectedPet?.type_label ?? insurancePlans?.meta?.pet?.type_label ?? "寵物";
   const hasMicrochip = selectedPet?.has_microchip ?? insurancePlans?.meta?.pet?.has_microchip ?? false;
+  const isRegistered = selectedPet?.is_registered ?? insurancePlans?.meta?.pet?.is_registered ?? false;
 
   return (
     <div className="space-y-6">
@@ -102,6 +103,9 @@ export function Insurance() {
                   </span>
                   <span className="rounded-full bg-white px-3 py-1 shadow-sm">
                     晶片：{hasMicrochip ? "已填寫" : "尚未填寫"}
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                    寵登：{isRegistered ? "已完成" : "尚未完成"}
                   </span>
                 </div>
               </div>

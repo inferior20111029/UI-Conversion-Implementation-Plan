@@ -168,6 +168,7 @@ export function InsuranceDetail() {
                     <p>{selectedPet.name} / {selectedPet.type_label ?? selectedPet.type}</p>
                     <p>品種：{selectedPet.breed || "尚未填寫"}</p>
                     <p>晶片：{selectedPet.has_microchip ? selectedPet.microchip_number || "已填寫" : "尚未填寫"}</p>
+                    <p>寵登：{selectedPet.is_registered ? selectedPet.registration_number || "已完成" : "尚未完成"}</p>
                   </div>
                 </div>
               )}

@@ -36,6 +36,8 @@ export interface PetRecord {
   weight?: number | null;
   microchip_number?: string | null;
   has_microchip?: boolean;
+  is_registered?: boolean;
+  registration_number?: string | null;
   insurance_type?: PetInsuranceType;
   insuranceProfile?: Record<string, unknown> | null;
   healthRecords?: Record<string, unknown>[];
@@ -49,6 +51,8 @@ export interface PetPayload {
   birthday: string;
   weight?: number;
   microchip_number?: string;
+  is_registered?: boolean;
+  registration_number?: string;
 }
 
 /* ── Pets ───────────────────────────────────────── */
@@ -136,6 +140,8 @@ export interface InsurancePlanListResponse {
       breed?: string | null;
       microchip_number?: string | null;
       has_microchip?: boolean;
+      is_registered?: boolean;
+      registration_number?: string | null;
       insurance_type: PetInsuranceType;
     };
   };

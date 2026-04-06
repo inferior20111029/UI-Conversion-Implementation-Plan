@@ -114,6 +114,9 @@ export function Dashboard() {
                   <span className="rounded-full bg-white px-3 py-1 shadow-sm">
                     晶片：{selectedPet?.has_microchip || petDashboard?.has_microchip ? "已填寫" : "尚未填寫"}
                   </span>
+                  <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                    寵登：{selectedPet?.is_registered || petDashboard?.is_registered ? "已完成" : "尚未完成"}
+                  </span>
                 </div>
               </div>
               <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">

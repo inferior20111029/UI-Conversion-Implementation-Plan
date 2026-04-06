@@ -12,6 +12,8 @@ type PetFormState = {
   gender: "male" | "female";
   weight: string;
   microchipNumber: string;
+  isRegistered: boolean;
+  registrationNumber: string;
 };
 
 const defaultForm: PetFormState = {
@@ -22,6 +24,8 @@ const defaultForm: PetFormState = {
   gender: "male",
   weight: "",
   microchipNumber: "",
+  isRegistered: false,
+  registrationNumber: "",
 };
 
 export function AddPet() {
@@ -47,6 +51,8 @@ export function AddPet() {
       gender: pet.gender === "female" ? "female" : "male",
       weight: pet.weight != null ? String(pet.weight) : "",
       microchipNumber: pet.microchip_number ?? "",
+      isRegistered: Boolean(pet.is_registered),
+      registrationNumber: pet.registration_number ?? "",
     });
   }, [pet]);
 
@@ -66,6 +72,8 @@ export function AddPet() {
       breed: form.breed || undefined,
       weight: form.weight ? parseFloat(form.weight) : undefined,
       microchip_number: form.microchipNumber || undefined,
+      is_registered: form.isRegistered,
+      registration_number: form.isRegistered ? (form.registrationNumber || undefined) : undefined,
     };
 
     const handlers = {
@@ -132,6 +140,17 @@ export function AddPet() {
               </div>
               <h2 className="text-lg font-semibold text-slate-900">{insurancePreview.label}</h2>
               <p className="mt-1 text-sm text-slate-600">{insurancePreview.description}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+                <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                  品種：{form.breed || "尚未填寫"}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                  晶片：{form.microchipNumber ? "已填寫" : "尚未填寫"}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                  寵登：{form.isRegistered ? "已完成" : "尚未完成"}
+                </span>
+              </div>
             </div>
             <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
               <p className="text-xs font-semibold text-green-700 mb-1">可匹配物種</p>
@@ -255,6 +274,45 @@ export function AddPet() {
               <p className="mt-1 text-xs text-muted-foreground">
                 若方案要求晶片，系統會依此判斷是否符合投保資格。
               </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <label className="flex items-start gap-3">
+                <input
+                  id="pet-is-registered"
+                  type="checkbox"
+                  checked={form.isRegistered}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      isRegistered: e.target.checked,
+                      registrationNumber: e.target.checked ? form.registrationNumber : "",
+                    })
+                  }
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-[#4CAF50] focus:ring-[#4CAF50]"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-700">已完成寵物登記</span>
+                  <span className="block text-xs text-muted-foreground">
+                    若保單要求寵登，系統會依此判斷是否符合投保資格。
+                  </span>
+                </span>
+              </label>
+
+              <div>
+                <label className={labelClass}>寵登編號</label>
+                <input
+                  id="pet-registration-number"
+                  value={form.registrationNumber}
+                  onChange={(e) => setForm({ ...form, registrationNumber: e.target.value, isRegistered: true })}
+                  placeholder="例：REG-2026-0001"
+                  className={inputClass}
+                  disabled={!form.isRegistered && !form.registrationNumber}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  填入寵登編號會自動視為已完成寵物登記。
+                </p>
+              </div>
             </div>
 
             {error && (
