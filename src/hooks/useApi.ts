@@ -3,6 +3,7 @@ import {
   aiHealthService,
   CreateAiHealthScanPayload,
   dashboardService,
+  insuranceService,
   petService,
   healthRecordService,
   affiliateService,
@@ -91,6 +92,20 @@ export const useAffiliateOffers = () =>
   useQuery({
     queryKey: ["affiliateOffers"],
     queryFn: () => affiliateService.offers(),
+  });
+
+export const useInsurancePlans = (petId: string) =>
+  useQuery({
+    queryKey: ["insurancePlans", petId],
+    queryFn: () => insuranceService.plans(petId),
+    enabled: !!petId,
+  });
+
+export const useInsurancePlanDetail = (planId: string, petId?: string) =>
+  useQuery({
+    queryKey: ["insurancePlanDetail", planId, petId],
+    queryFn: () => insuranceService.detail(planId, petId),
+    enabled: !!planId,
   });
 
 export const useLogAffiliateClick = () =>

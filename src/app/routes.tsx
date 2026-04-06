@@ -11,6 +11,7 @@ import { Web3Identity } from "./pages/Web3Identity";
 import { Login } from "./pages/Login";
 import { AddPet } from "./pages/AddPet";
 import { AddHealthRecord } from "./pages/AddHealthRecord";
+import { InsuranceDetail } from "./pages/InsuranceDetail";
 
 export const router = createBrowserRouter([
   // Public
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: "pets/add", Component: AddPet },
       { path: "pets/:petId/add-record", Component: AddHealthRecord },
       { path: "insurance", Component: Insurance },
+      { path: "insurance/:planId", Component: InsuranceDetail },
       { path: "ai-doctor", Component: AIDoctorChat },
       { path: "scanner", Component: HealthScanner },
       { path: "products", Component: Products },

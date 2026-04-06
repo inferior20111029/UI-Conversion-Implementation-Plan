@@ -77,6 +77,79 @@ export const dashboardService = {
   discountEstimate: (petId: string) => api.get(`/pets/${petId}/affiliates`) as Promise<any>,
 };
 
+export interface InsurancePlanListItem {
+  id: number;
+  provider_name: string;
+  name: string;
+  summary: string | null;
+  currency: string;
+  annual_premium_min: number;
+  annual_premium_max: number;
+  species_supported: string[];
+  final_score: number;
+  ranking_position: number;
+  coverage_fit: number;
+  claimability: number;
+  sponsor_boost: number;
+  score_breakdown: Record<string, number>;
+  badges: string[];
+  why_recommended: string[];
+}
+
+export interface InsurancePlanListResponse {
+  plans: InsurancePlanListItem[];
+  meta: {
+    algorithm_version: string;
+    catalog_version: string | null;
+    total: number;
+  };
+}
+
+export interface InsurancePlanDetailResponse {
+  id: number;
+  provider: {
+    id: number;
+    name: string;
+  };
+  plan: {
+    name: string;
+    code: string;
+    summary: string | null;
+  };
+  pricing: {
+    currency: string;
+    annual_premium_min: number;
+    annual_premium_max: number;
+  };
+  eligibility: Record<string, unknown>;
+  coverage: Record<string, boolean>;
+  waiting_period: {
+    major_conditions_days: number | null;
+    general_conditions_days: number | null;
+  };
+  medical_constraints: Record<string, unknown>;
+  exclusions: string[];
+  claim_requirements: Record<string, boolean | null>;
+  score_breakdown: Record<string, number> | null;
+  badges: string[];
+  why_recommended: string[];
+  terms: {
+    url: string | null;
+    source_updated_at: string | null;
+  };
+  algorithm_version: string | null;
+}
+
+export const insuranceService = {
+  plans: (petId: string) =>
+    api.get(`/pets/${petId}/insurance/plans`) as Promise<InsurancePlanListResponse>,
+
+  detail: (planId: string, petId?: string) =>
+    api.get(`/insurance/plans/${planId}`, {
+      params: petId ? { pet_id: petId } : undefined,
+    }) as Promise<InsurancePlanDetailResponse>,
+};
+
 export type AiHealthScanStatus = "queued" | "processing" | "completed" | "failed";
 
 export interface AiHealthFinding {

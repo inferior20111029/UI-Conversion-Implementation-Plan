@@ -1,45 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { ActionCTA } from "../components/ui/ActionCTA";
 import { Badge } from "../components/ui/badge";
-import { Check, Shield, Zap, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import { Shield, Zap, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { Progress } from "../components/ui/progress";
-import { useAffiliateOffers, useLogAffiliateClick, useDiscountEstimate, usePets } from "../../hooks/useApi";
-import { useState } from "react";
+import { useDiscountEstimate, useInsurancePlans, usePets } from "../../hooks/useApi";
+import { useNavigate } from "react-router";
 
 export function Insurance() {
+  const navigate = useNavigate();
   const { data: pets } = usePets();
   const activePetId = pets?.[0]?.id ?? "";
 
-  const { data: offers, isLoading: offersLoading, isError: offersError } = useAffiliateOffers();
+  const { data: insurancePlans, isLoading: plansLoading, isError: plansError } = useInsurancePlans(activePetId);
   const { data: discount, isLoading: discountLoading } = useDiscountEstimate(activePetId);
-  const { mutate: logClick } = useLogAffiliateClick();
-
-  const handleOfferClick = async (offer: any) => {
-    logClick(offer.id, {
-      onSuccess: (res: any) => {
-        const url = res?.data?.redirect_url ?? offer.url;
-        window.open(url, "_blank", "noopener,noreferrer");
-      },
-      onError: () => {
-        // still open URL even if logging fails
-        window.open(offer.url, "_blank", "noopener,noreferrer");
-      },
-    });
-  };
-
-  const offerTypeLabel: Record<string, string> = {
-    INSURANCE: "保險方案",
-    FOOD: "健康飲食",
-    VET: "獸醫服務",
-  };
-
-  const offerTypeBadge: Record<string, string> = {
-    INSURANCE: "bg-blue-100 text-blue-700",
-    FOOD: "bg-green-100 text-green-700",
-    VET: "bg-purple-100 text-purple-700",
-  };
-
-  const isLoading = offersLoading || discountLoading;
+  const isLoading = plansLoading || discountLoading;
+  const plans = insurancePlans?.plans ?? [];
 
   return (
     <div className="space-y-6">
@@ -103,7 +78,12 @@ export function Insurance() {
 
       {/* Affiliate Offers from API */}
       <div>
-        <h2 className="text-xl font-bold mb-4">推薦合作方案</h2>
+        <div className="flex flex-col gap-1 mb-4">
+          <h2 className="text-xl font-bold">推薦保險方案</h2>
+          <p className="text-sm text-muted-foreground">
+            由保險公司策略引擎同步的可投保方案，已依您毛孩條件完成排序。
+          </p>
+        </div>
 
         {isLoading && (
           <div className="grid lg:grid-cols-3 gap-6">
@@ -113,38 +93,55 @@ export function Insurance() {
           </div>
         )}
 
-        {offersError && (
+        {plansError && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm">無法載入方案資料，請稍後再試。</p>
+            <p className="text-sm">無法載入保費列表，請確認 API 是否完成同步後再試。</p>
           </div>
         )}
 
-        {!isLoading && offers && (
+        {!isLoading && plans.length > 0 && (
           <div className="grid lg:grid-cols-3 gap-6">
-            {offers.map((offer: any) => (
-              <div key={offer.id} className="space-y-4">
-                <Card className="border-2 hover:border-[#4CAF50] transition-colors cursor-pointer group">
+            {plans.map((plan) => (
+              <div key={plan.id} className="space-y-4">
+                <Card className="border-2 hover:border-[#4CAF50] transition-colors group">
                   <CardHeader>
-                    <div className="flex items-start justify-between mb-1">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${offerTypeBadge[offer.offer_type] ?? "bg-gray-100 text-gray-700"}`}>
-                        {offerTypeLabel[offer.offer_type] ?? offer.offer_type}
-                      </span>
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <Badge variant="secondary">#{plan.ranking_position} 推薦</Badge>
+                      <div className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        分數 {plan.final_score}
+                      </div>
                     </div>
-                    <CardTitle className="text-base">{offer.title}</CardTitle>
-                    <CardDescription className="text-xs">{offer.partner_name}</CardDescription>
+                    <CardTitle className="text-base">{plan.name}</CardTitle>
+                    <CardDescription className="text-xs">{plan.provider_name}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-700">{offer.description}</p>
+                    <div>
+                      <p className="text-sm text-gray-700">{plan.summary || "保險公司已提供結構化保障說明，可於詳情頁查看完整內容。"}</p>
+                      <p className="mt-3 text-lg font-semibold text-slate-900">
+                        {plan.currency} {plan.annual_premium_min.toLocaleString()} - {plan.annual_premium_max.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">年保費區間</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {plan.badges.map((badge) => (
+                        <Badge key={badge} variant="secondary">{badge}</Badge>
+                      ))}
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-4">
+                      <p className="text-xs font-semibold text-slate-600 mb-2">推薦原因</p>
+                      <ul className="space-y-1 text-sm text-slate-700">
+                        {plan.why_recommended.map((reason) => (
+                          <li key={reason}>• {reason}</li>
+                        ))}
+                      </ul>
+                    </div>
                     <ActionCTA
-                      primaryText={
-                        <span className="flex items-center gap-2 justify-center">
-                          立即查看 <ExternalLink className="w-4 h-4" />
-                        </span> as any
-                      }
-                      secondaryText="點擊後將記錄您的使用回饋"
-                      onClick={() => handleOfferClick(offer)}
-                      variant={offer.offer_type === "INSURANCE" ? "success" : "default"}
+                      primaryText="查看方案詳情"
+                      secondaryText="查看保障內容、等待期、不保事項與理賠需求"
+                      onClick={() => navigate(`/insurance/${plan.id}?pet=${activePetId}`)}
+                      variant="success"
                     />
                   </CardContent>
                 </Card>
@@ -153,11 +150,11 @@ export function Insurance() {
           </div>
         )}
 
-        {!isLoading && offers?.length === 0 && (
+        {!isLoading && plans.length === 0 && (
           <Card className="text-center py-12">
             <CardContent>
               <div className="text-4xl mb-3">🔍</div>
-              <p className="text-muted-foreground">目前沒有可用的合作方案</p>
+              <p className="text-muted-foreground">目前沒有符合條件的保險方案，請稍後再試或補充更多健康資料。</p>
             </CardContent>
           </Card>
         )}
