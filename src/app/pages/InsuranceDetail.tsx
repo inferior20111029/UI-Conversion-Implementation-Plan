@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { ActionCTA } from "../components/ui/ActionCTA";
 import type { PetRecord } from "../../services/services";
 import { useInsurancePlanDetail, usePets } from "../../hooks/useApi";
+import { breedLabel } from "../../lib/pet-breeds";
 
 export function InsuranceDetail() {
   const { planId = "" } = useParams();
@@ -166,7 +167,7 @@ export function InsuranceDetail() {
                   <p className="text-xs font-semibold text-slate-500 mb-2">目前匹配對象</p>
                   <div className="space-y-2 text-sm text-slate-700">
                     <p>{selectedPet.name} / {selectedPet.type_label ?? selectedPet.type}</p>
-                    <p>品種：{selectedPet.breed || "尚未填寫"}</p>
+                    <p>品種：{breedLabel(selectedPet.breed) || "尚未填寫"}</p>
                     <p>晶片：{selectedPet.has_microchip ? selectedPet.microchip_number || "已填寫" : "尚未填寫"}</p>
                     <p>寵登：{selectedPet.is_registered ? selectedPet.registration_number || "已完成" : "尚未完成"}</p>
                   </div>

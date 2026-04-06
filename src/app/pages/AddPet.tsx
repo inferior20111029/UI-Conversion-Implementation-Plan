@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useCreatePet, usePet, useUpdatePet } from "../../hooks/useApi";
+import { breedLabel, breedSuggestions } from "../../lib/pet-breeds";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { AlertCircle, Loader2, PencilLine, PlusCircle, Shield } from "lucide-react";
 
@@ -46,7 +47,7 @@ export function AddPet() {
     setForm({
       name: pet.name ?? "",
       type: pet.type === "cat" ? "cat" : "dog",
-      breed: pet.breed ?? "",
+      breed: breedLabel(pet.breed) || pet.breed || "",
       birthday: pet.birthday ? String(pet.birthday).slice(0, 10) : "",
       gender: pet.gender === "female" ? "female" : "male",
       weight: pet.weight != null ? String(pet.weight) : "",
@@ -219,7 +220,7 @@ export function AddPet() {
                 list={`breed-options-${form.type}`}
                 value={form.breed}
                 onChange={(e) => setForm({ ...form, breed: e.target.value })}
-                placeholder="例：Shiba Inu"
+                placeholder={form.type === "cat" ? "例：英國短毛貓" : "例：柴犬"}
                 className={inputClass}
               />
               <datalist id={`breed-options-${form.type}`}>
@@ -228,7 +229,7 @@ export function AddPet() {
                 ))}
               </datalist>
               <p className="mt-1 text-xs text-muted-foreground">
-                建議使用系統建議品種值，能更準確對到品種型保單。
+                建議使用中文標準品種名稱，能更準確對到品種型保單。
               </p>
             </div>
 
@@ -361,26 +362,4 @@ function insuranceTypePreview(type: "dog" | "cat") {
     description: "優先對應犬隻可投保的醫療、意外與活動型保障方案。",
     eligibleSpecies: "狗",
   };
-}
-
-function breedSuggestions(type: "dog" | "cat") {
-  if (type === "cat") {
-    return [
-      "British Shorthair",
-      "Ragdoll",
-      "Persian",
-      "Maine Coon",
-      "Scottish Fold",
-      "Domestic Shorthair",
-    ];
-  }
-
-  return [
-    "Shiba Inu",
-    "Golden Retriever",
-    "Labrador Retriever",
-    "French Bulldog",
-    "Welsh Corgi",
-    "Poodle",
-  ];
 }

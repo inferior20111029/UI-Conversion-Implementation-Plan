@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Shield, Zap, Loader2, AlertCircle, Sparkles, PencilLine, PlusCircle } from "lucide-react";
 import { Progress } from "../components/ui/progress";
 import { useDiscountEstimate, useInsurancePlans, usePets } from "../../hooks/useApi";
+import { breedLabel } from "../../lib/pet-breeds";
 import type { PetRecord } from "../../services/services";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
@@ -99,7 +100,7 @@ export function Insurance() {
                 <p className="mt-1 text-sm text-slate-600">{insuranceType.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                   <span className="rounded-full bg-white px-3 py-1 shadow-sm">
-                    品種：{selectedPet?.breed ?? insurancePlans?.meta?.pet?.breed ?? "尚未填寫"}
+                    品種：{breedLabel(selectedPet?.breed ?? insurancePlans?.meta?.pet?.breed) || "尚未填寫"}
                   </span>
                   <span className="rounded-full bg-white px-3 py-1 shadow-sm">
                     晶片：{hasMicrochip ? "已填寫" : "尚未填寫"}

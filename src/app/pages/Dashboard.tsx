@@ -5,6 +5,7 @@ import { Progress } from "../components/ui/progress";
 import { Button } from "../components/ui/button";
 import { Droplet, Footprints, Heart, Weight, TrendingUp, AlertCircle, PencilLine, PlusCircle, ShieldCheck } from "lucide-react";
 import { usePets, usePetDashboard } from "../../hooks/useApi";
+import { breedLabel } from "../../lib/pet-breeds";
 import type { PetRecord } from "../../services/services";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -109,7 +110,7 @@ export function Dashboard() {
                 <p className="mt-1 text-sm text-slate-600">{insuranceType.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                   <span className="rounded-full bg-white px-3 py-1 shadow-sm">
-                    品種：{selectedPet?.breed || petDashboard?.breed || "尚未填寫"}
+                    品種：{breedLabel(selectedPet?.breed || petDashboard?.breed) || "尚未填寫"}
                   </span>
                   <span className="rounded-full bg-white px-3 py-1 shadow-sm">
                     晶片：{selectedPet?.has_microchip || petDashboard?.has_microchip ? "已填寫" : "尚未填寫"}
