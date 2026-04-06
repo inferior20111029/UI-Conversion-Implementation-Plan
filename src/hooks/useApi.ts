@@ -4,6 +4,7 @@ import {
   CreateAiHealthScanPayload,
   dashboardService,
   insuranceService,
+  PetPayload,
   petService,
   healthRecordService,
   affiliateService,
@@ -55,8 +56,28 @@ export const usePet = (petId: string) =>
 export const useCreatePet = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => petService.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pets"] }),
+    mutationFn: (data: PetPayload) => petService.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pets"] });
+      qc.invalidateQueries({ queryKey: ["petDashboard"] });
+      qc.invalidateQueries({ queryKey: ["insurancePlans"] });
+    },
+  });
+};
+
+export const useUpdatePet = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<PetPayload> }) =>
+      petService.update(id, data),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ["pets"] });
+      qc.invalidateQueries({ queryKey: ["pet", variables.id] });
+      qc.invalidateQueries({ queryKey: ["petDashboard"] });
+      qc.invalidateQueries({ queryKey: ["insurancePlans"] });
+      qc.invalidateQueries({ queryKey: ["insurancePlanDetail"] });
+      qc.invalidateQueries({ queryKey: ["discountEstimate"] });
+    },
   });
 };
 

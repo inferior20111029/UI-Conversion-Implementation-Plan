@@ -18,23 +18,49 @@ export const authService = {
   me: () => api.get("/user") as Promise<any>,
 };
 
+export interface PetInsuranceType {
+  key: string;
+  label: string;
+  description: string;
+  eligible_species: string[];
+}
+
+export interface PetRecord {
+  id: string | number;
+  name: string;
+  type: "dog" | "cat" | string;
+  type_label?: string;
+  gender: "male" | "female" | string;
+  breed?: string | null;
+  birthday?: string | null;
+  weight?: number | null;
+  microchip_number?: string | null;
+  has_microchip?: boolean;
+  insurance_type?: PetInsuranceType;
+  insuranceProfile?: Record<string, unknown> | null;
+  healthRecords?: Record<string, unknown>[];
+}
+
+export interface PetPayload {
+  name: string;
+  type: "dog" | "cat";
+  gender: "male" | "female";
+  breed?: string;
+  birthday: string;
+  weight?: number;
+  microchip_number?: string;
+}
+
 /* ── Pets ───────────────────────────────────────── */
 export const petService = {
-  list: () => api.get("/pets") as Promise<any>,
+  list: () => api.get("/pets") as Promise<PetRecord[]>,
 
-  create: (data: {
-    name: string;
-    type: "dog" | "cat"; // mapped from species
-    gender: "male" | "female";
-    breed?: string;
-    birthday: string; // mapped from birth_date
-    weight?: number;
-  }) => api.post("/pets", data) as Promise<any>,
+  create: (data: PetPayload) => api.post("/pets", data) as Promise<PetRecord>,
 
-  get: (id: string) => api.get(`/pets/${id}`) as Promise<any>,
+  get: (id: string) => api.get(`/pets/${id}`) as Promise<PetRecord>,
 
-  update: (id: string, data: Partial<any>) =>
-    api.put(`/pets/${id}`, data) as Promise<any>,
+  update: (id: string, data: Partial<PetPayload>) =>
+    api.put(`/pets/${id}`, data) as Promise<PetRecord>,
 
   delete: (id: string) => api.delete(`/pets/${id}`) as Promise<any>,
 
@@ -102,6 +128,16 @@ export interface InsurancePlanListResponse {
     algorithm_version: string;
     catalog_version: string | null;
     total: number;
+    pet?: {
+      id: string | number;
+      name: string;
+      type: string;
+      type_label: string;
+      breed?: string | null;
+      microchip_number?: string | null;
+      has_microchip?: boolean;
+      insurance_type: PetInsuranceType;
+    };
   };
 }
 

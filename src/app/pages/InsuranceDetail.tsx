@@ -4,6 +4,7 @@ import { ArrowLeft, AlertCircle, ExternalLink, Loader2, ShieldCheck } from "luci
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { ActionCTA } from "../components/ui/ActionCTA";
+import type { PetRecord } from "../../services/services";
 import { useInsurancePlanDetail, usePets } from "../../hooks/useApi";
 
 export function InsuranceDetail() {
@@ -12,6 +13,10 @@ export function InsuranceDetail() {
   const { data: pets } = usePets();
   const fallbackPetId = pets?.[0]?.id;
   const selectedPetId = searchParams.get("pet") || fallbackPetId;
+  const selectedPet = useMemo(
+    () => pets?.find((pet: PetRecord) => String(pet.id) === String(selectedPetId)),
+    [pets, selectedPetId],
+  );
   const { data: plan, isLoading, isError } = useInsurancePlanDetail(planId, selectedPetId);
 
   const coverageEntries = useMemo(
@@ -156,6 +161,16 @@ export function InsuranceDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {selectedPet && (
+                <div className="rounded-xl border bg-slate-50 p-4">
+                  <p className="text-xs font-semibold text-slate-500 mb-2">目前匹配對象</p>
+                  <div className="space-y-2 text-sm text-slate-700">
+                    <p>{selectedPet.name} / {selectedPet.type_label ?? selectedPet.type}</p>
+                    <p>品種：{selectedPet.breed || "尚未填寫"}</p>
+                    <p>晶片：{selectedPet.has_microchip ? selectedPet.microchip_number || "已填寫" : "尚未填寫"}</p>
+                  </div>
+                </div>
+              )}
               <div className="rounded-xl bg-green-50 p-4 border border-green-200">
                 <p className="text-xs font-semibold text-green-700 mb-1">推薦原因</p>
                 <ul className="space-y-2 text-sm text-green-900">

@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Dashboard },
       { path: "pets/add", Component: AddPet },
+      { path: "pets/:petId/edit", Component: AddPet },
       { path: "pets/:petId/add-record", Component: AddHealthRecord },
       { path: "insurance", Component: Insurance },
       { path: "insurance/:planId", Component: InsuranceDetail },
