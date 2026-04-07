@@ -225,6 +225,60 @@ export interface CreateAiHealthScanPayload {
   petId: string;
 }
 
+export interface AiDoctorHistoryItem {
+  role: "user" | "ai";
+  content: string;
+}
+
+export interface AiDoctorConsultationAssessment {
+  category: string;
+  summary: string;
+  severity: "low" | "medium" | "high";
+  confidence: number;
+  triage: string;
+  recommendation: string;
+  estimated_cost: {
+    currency: string;
+    min: number;
+    max: number;
+    insurance_savings: number;
+  };
+  next_steps: string[];
+  warning_signs: string[];
+  follow_up_questions: string[];
+  matched_signals: string[];
+}
+
+export interface AiDoctorConsultationPetContext {
+  id: string | number;
+  name: string;
+  type: string;
+  breed?: string | null;
+  weight?: number | null;
+  age_years?: number | null;
+  recent_records: Array<{
+    type: string;
+    recorded_at: string | null;
+    summary: string;
+  }>;
+}
+
+export interface AiDoctorConsultationResponse {
+  reply: string;
+  assessment: AiDoctorConsultationAssessment;
+  pet: AiDoctorConsultationPetContext;
+  meta: {
+    generated_at: string;
+    disclaimer: string;
+  };
+}
+
+export interface CreateAiDoctorConsultationPayload {
+  petId: string;
+  message: string;
+  history?: AiDoctorHistoryItem[];
+}
+
 const asRecord = (value: unknown): Record<string, any> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, any>)
@@ -526,4 +580,13 @@ export const aiHealthService = {
   },
 
   get: (id: string) => api.get(`/ai-health/scans/${id}`) as Promise<any>,
+};
+
+export const aiDoctorService = {
+  consult: ({ petId, message, history = [] }: CreateAiDoctorConsultationPayload) =>
+    api.post("/ai-doctor/consultations", {
+      pet_id: petId,
+      message,
+      history,
+    }) as Promise<AiDoctorConsultationResponse>,
 };

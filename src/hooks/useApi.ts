@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  aiDoctorService,
   aiHealthService,
+  CreateAiDoctorConsultationPayload,
   CreateAiHealthScanPayload,
   dashboardService,
   insuranceService,
@@ -166,4 +168,9 @@ export const useAiHealthScan = (scanId: string | null) =>
 
       return 2500;
     },
+  });
+
+export const useAiDoctorConsultation = () =>
+  useMutation({
+    mutationFn: (payload: CreateAiDoctorConsultationPayload) => aiDoctorService.consult(payload),
   });
