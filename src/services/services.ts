@@ -99,13 +99,143 @@ export const affiliateService = {
 export const dashboardService = {
   // Aggregated data for the main dashboard view
   petDashboard: (petId: string) =>
-    api.get(`/dashboard/pets/${petId}`) as Promise<any>,
+    api.get(`/dashboard/pets/${petId}`) as Promise<PetDashboardResponse>,
 
   // Legacy/Helper mappings
   summary: () => api.get("/pets") as Promise<any>,
   riskScore: (petId: string) => api.get(`/pets/${petId}/affiliates`) as Promise<any>,
   discountEstimate: (petId: string) => api.get(`/pets/${petId}/affiliates`) as Promise<any>,
 };
+
+export interface DashboardChecklistItem {
+  key: string;
+  label: string;
+  completed: boolean;
+  helper: string;
+}
+
+export interface DashboardRiskInsight {
+  key: string;
+  title: string;
+  current_status: string;
+  status_type: "warning" | "success" | "danger";
+  recommendation: string;
+  financial_impact: {
+    type: "increase" | "decrease";
+    amount: number;
+    unit?: string | null;
+    label?: string | null;
+  };
+}
+
+export interface DashboardRecommendedPlan {
+  id: number | null;
+  provider_name: string | null;
+  name: string;
+  currency: string;
+  market_price_monthly: number;
+  discounted_price_monthly: number;
+  monthly_savings: number;
+  ranking_position: number | null;
+  final_score: number | null;
+  badges: string[];
+  why_recommended: string[];
+  next_milestone: {
+    title: string;
+    progress_percent: number;
+    projected_price_monthly: number;
+    target_discount_percent: number;
+    helper_text: string;
+  };
+}
+
+export interface DashboardLatestWeight {
+  value_kg: number | null;
+  recorded_at: string | null;
+  delta_kg: number | null;
+  progress: number;
+  note: string;
+}
+
+export interface DashboardActivitySummary {
+  today_minutes: number;
+  minutes_last_7_days: number;
+  sessions_last_7_days: number;
+  last_activity_at: string | null;
+  last_activity_label: string | null;
+  progress: number;
+  note: string;
+  has_device_data: boolean;
+}
+
+export interface DashboardPreventiveCareStatus {
+  key: string;
+  label: string;
+  status: "missing" | "good" | "attention";
+  days_since: number | null;
+  last_recorded_at: string | null;
+  progress: number;
+  note: string;
+}
+
+export interface DashboardRecentHealthRecord {
+  id: number | string;
+  record_type: string;
+  record_type_label: string;
+  date: string | null;
+  value: unknown;
+  notes: string | null;
+  summary: string;
+}
+
+export interface DashboardWeightTrendPoint {
+  date: string;
+  weight_kg: number;
+}
+
+export interface PetDashboardResponse {
+  id: string | number;
+  name: string;
+  type: string;
+  type_label: string;
+  insurance_type: PetInsuranceType;
+  breed?: string | null;
+  microchip_number?: string | null;
+  has_microchip: boolean;
+  registration_number?: string | null;
+  is_registered: boolean;
+  risk_profile: {
+    score: number;
+    risk_level: "low" | "medium" | "high";
+    factors: string[];
+    recommendations: string[];
+    insights: DashboardRiskInsight[];
+    updated_at: string | null;
+  };
+  discount_status: {
+    discount_percent: number;
+    market_price_monthly: number;
+    discounted_price_monthly: number;
+    monthly_savings: number;
+    next_milestone: DashboardRecommendedPlan["next_milestone"];
+  };
+  recommended_plan: DashboardRecommendedPlan;
+  health_summary: {
+    completion_percent: number;
+    completed_items_count: number;
+    total_items_count: number;
+    items: DashboardChecklistItem[];
+    missing_items: DashboardChecklistItem[];
+  };
+  latest_weight: DashboardLatestWeight;
+  activity_summary: DashboardActivitySummary;
+  preventive_care: {
+    checkup: DashboardPreventiveCareStatus;
+    vaccine: DashboardPreventiveCareStatus;
+  };
+  weight_trend: DashboardWeightTrendPoint[];
+  recent_health_records: DashboardRecentHealthRecord[];
+}
 
 export interface InsurancePlanListItem {
   id: number;

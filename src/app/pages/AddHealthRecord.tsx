@@ -1,163 +1,183 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { AlertCircle, HeartPulse, Loader2 } from "lucide-react";
 import { useCreateHealthRecord } from "../../hooks/useApi";
+import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { AlertCircle, Loader2, HeartPulse } from "lucide-react";
 
 const RECORD_TYPES = [
-  { value: "WEIGHT", label: "體重", valueLabel: "體重 (kg)", placeholder: "例：5.5", valueKey: "weight_kg" },
-  { value: "DIET", label: "飲食", valueLabel: "餐食描述", placeholder: "例：乾糧100g + 水煮雞胸肉", valueKey: "meal" },
-  { value: "EXERCISE", label: "運動", valueLabel: "運動描述", placeholder: "例：散步 30 分鐘", valueKey: "activity" },
-  { value: "VACCINE", label: "疫苗", valueLabel: "疫苗名稱", placeholder: "例：Rabies + DHPP", valueKey: "vaccine_name" },
-  { value: "MEDICATION", label: "用藥", valueLabel: "藥物名稱 / 劑量", placeholder: "例：Heartgard 1 錠", valueKey: "medication" },
-  { value: "SYMPTOM", label: "症狀", valueLabel: "症狀描述", placeholder: "例：嘔吐兩次", valueKey: "symptom" },
-  { value: "VET_VISIT", label: "看診", valueLabel: "看診原因", placeholder: "例：年度健康檢查", valueKey: "reason" },
-];
+  {
+    value: "weight",
+    label: "體重",
+    fieldLabel: "體重（kg）",
+    placeholder: "例如：29",
+    helper: "建議定期更新體重，方便追蹤健康趨勢。",
+  },
+  {
+    value: "checkup",
+    label: "健檢",
+    fieldLabel: "健檢摘要",
+    placeholder: "例如：心肺狀況正常，建議持續控制體重",
+    helper: "填寫健檢重點或醫師建議即可。",
+  },
+  {
+    value: "vaccine",
+    label: "疫苗",
+    fieldLabel: "疫苗名稱",
+    placeholder: "例如：Rabies、DHPP",
+    helper: "請填最近一次完成的疫苗名稱或組合。",
+  },
+] as const;
 
 export function AddHealthRecord() {
-  const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
-  const { mutate: createRecord, isPending } = useCreateHealthRecord(petId!);
+  const { petId } = useParams<{ petId: string }>();
+  const { mutate: createRecord, isPending } = useCreateHealthRecord(petId ?? "");
 
-  const [recordType, setRecordType] = useState("WEIGHT");
-  const [textValue, setTextValue] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [notes, setNotes] = useState("");
+  const [recordType, setRecordType] = useState<(typeof RECORD_TYPES)[number]["value"]>("weight");
+  const [rawValue, setRawValue] = useState("");
+  const [recordedAt, setRecordedAt] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState("");
 
-  const currentType = RECORD_TYPES.find((t) => t.value === recordType)!;
+  const currentType = RECORD_TYPES.find((type) => type.value === recordType)!;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
 
-    const isNumericType = recordType === "WEIGHT";
-    const parsedValue = isNumericType ? parseFloat(textValue) : textValue;
-
-    if (isNumericType && isNaN(parsedValue as number)) {
-      setError("請輸入有效的數字");
+    if (!petId) {
+      setError("找不到對應的寵物。");
       return;
     }
 
-    const value = { [currentType.valueKey]: parsedValue };
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      setError("請先填寫紀錄內容。");
+      return;
+    }
+
+    let value = trimmedValue;
+
+    if (recordType === "weight") {
+      const parsed = Number(trimmedValue);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        setError("請輸入正確的體重數值。");
+        return;
+      }
+
+      value = `${parsed}kg`;
+    }
+
+    if (recordType === "checkup") {
+      value = JSON.stringify({ note: trimmedValue });
+    }
+
+    if (recordType === "vaccine") {
+      value = JSON.stringify({ name: trimmedValue });
+    }
 
     createRecord(
-      { record_type: recordType, value, date, notes },
       {
-        onSuccess: () => navigate(-1),
-        onError: (err: any) => setError(err?.message || "新增失敗，請重試"),
-      }
+        type: recordType,
+        value,
+        recorded_at: `${recordedAt}T12:00:00`,
+      },
+      {
+        onSuccess: () => navigate("/"),
+        onError: (err: { message?: string }) => {
+          setError(err?.message || "新增健康紀錄失敗，請稍後再試。");
+        },
+      },
     );
   };
 
   const inputClass =
-    "w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4CAF50]";
-  const labelClass = "text-sm font-medium text-gray-700 block mb-1";
+    "w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4CAF50]";
+  const labelClass = "mb-1 block text-sm font-medium text-gray-700";
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-1">新增健康紀錄</h1>
-        <p className="text-muted-foreground text-sm">
-          每一筆紀錄都有助於優化風險評分與保費折扣。
+        <h1 className="mb-1 text-3xl font-bold">新增健康紀錄</h1>
+        <p className="text-sm text-muted-foreground">
+          補上近期體重、健檢或疫苗資料，讓健康儀表板與保費估算更準確。
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <HeartPulse className="w-5 h-5 text-[#4CAF50]" />
-            紀錄內容
+            <HeartPulse className="h-5 w-5 text-[#4CAF50]" />
+            健康紀錄內容
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Record Type */}
             <div>
-              <label className={labelClass}>紀錄類型 *</label>
-              <div className="grid grid-cols-4 gap-2">
-                {RECORD_TYPES.map((t) => (
+              <label className={labelClass}>紀錄類型</label>
+              <div className="grid grid-cols-3 gap-2">
+                {RECORD_TYPES.map((type) => (
                   <button
-                    key={t.value}
+                    key={type.value}
                     type="button"
-                    onClick={() => { setRecordType(t.value); setTextValue(""); }}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-medium border transition ${
-                      recordType === t.value
-                        ? "bg-[#4CAF50] text-white border-[#4CAF50]"
-                        : "bg-white text-gray-700 border-gray-200 hover:border-[#4CAF50]"
+                    onClick={() => {
+                      setRecordType(type.value);
+                      setRawValue("");
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                      recordType === type.value
+                        ? "border-[#4CAF50] bg-[#4CAF50] text-white"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-[#4CAF50]"
                     }`}
                   >
-                    {t.label}
+                    {type.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Date */}
             <div>
-              <label className={labelClass}>日期 *</label>
+              <label className={labelClass}>紀錄日期</label>
               <input
-                id="record-date"
+                id="recorded-at"
                 type="date"
                 required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+                value={recordedAt}
+                onChange={(event) => setRecordedAt(event.target.value)}
                 className={inputClass}
               />
             </div>
 
-            {/* Value */}
             <div>
-              <label className={labelClass}>{currentType.valueLabel} *</label>
+              <label className={labelClass}>{currentType.fieldLabel}</label>
               <input
                 id="record-value"
-                type={recordType === "WEIGHT" ? "number" : "text"}
-                step={recordType === "WEIGHT" ? "0.1" : undefined}
+                type={recordType === "weight" ? "number" : "text"}
+                step={recordType === "weight" ? "0.1" : undefined}
                 required
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
+                value={rawValue}
+                onChange={(event) => setRawValue(event.target.value)}
                 placeholder={currentType.placeholder}
                 className={inputClass}
               />
+              <p className="mt-1 text-xs text-muted-foreground">{currentType.helper}</p>
             </div>
 
-            {/* Notes */}
-            <div>
-              <label className={labelClass}>備註</label>
-              <textarea
-                id="record-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder="其他補充說明..."
-                className={`${inputClass} resize-none`}
-              />
-            </div>
-
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-700 text-sm">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error ? (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
-            )}
+            ) : null}
 
             <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="flex-1 border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg hover:bg-gray-50 transition text-sm"
-              >
+              <Button type="button" variant="outline" className="flex-1" onClick={() => navigate(-1)}>
                 取消
-              </button>
-              <button
-                id="submit-record"
-                type="submit"
-                disabled={isPending}
-                className="flex-1 bg-[#4CAF50] hover:bg-green-600 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-60 text-sm flex items-center justify-center gap-2"
-              >
-                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isPending ? "儲存中..." : "儲存紀錄"}
-              </button>
+              </Button>
+              <Button id="submit-record" type="submit" className="flex-1" disabled={isPending}>
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isPending ? "儲存中..." : "儲存健康紀錄"}
+              </Button>
             </div>
           </form>
         </CardContent>
